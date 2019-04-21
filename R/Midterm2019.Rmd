@@ -126,7 +126,7 @@ roll2 <- function(bones) {
 
 #### II. Simulation 
 
-(@) 공평한 주사위 두 개를 던져 합을 구하는 게임을 20번 반복하는 코드는 다음 중 어느 것인가? 위에서 정의한 `roll2`를 이용하시오. 단, `roll2`는 위에 정의한 대로 임.
+(@) 공평한 주사위 두 개를 던져 합을 구하는 게임을 20번 반복하는 코드는 다음 중 어느 것인가? 위에서 정의한 `roll2`를 이용하시오. 
 
     가. `replicate(20, roll2())`
 
@@ -215,7 +215,7 @@ roll2 <- function(bones) {
 
 <p>
 
-    가. 
+가. 
     
 ```
 [1] 2 1 1 2
@@ -223,20 +223,20 @@ attr(,"levels")
 [1] "female" "male"  
 ```
 
-    나. 
+나. 
 
 ```
 [1] "integer"
 ```
 
-    다. 
+다. 
 
 ```
 [1] male   female female male  
 Levels: female male
 ```
 
-    라.  
+라.  
 
 ```
 $levels
@@ -253,27 +253,27 @@ $levels
 
 <p>
 
-    가. 
+가. 
 
 ```
 $char
 [1] "R"
 ```
 
-    나. 
+나. 
 
 ```
 [1] "R"
 ```
 
-    다. 
+다. 
 
 ```
 $R
 [1] "char"
 ```
 
-    라. 
+라. 
     
 ```
 [1] "char"
@@ -283,27 +283,27 @@ $R
 
 <p>
 
-    가. 
+가. 
 
 ```
 $char
 [1] "R"
 ```
 
-    나. 
+나. 
     
 ```
 [1] "R"
 ```
 
-    다. 
+다. 
 
 ```
 $R
 [1] "char"
 ```
 
-    라. 
+라. 
     
 ```
 [1] "char"
@@ -346,7 +346,8 @@ df <- data.frame(face = c("ace", "two", "six"),
 (@) `str(df)`의 결과를 올바르게 나타낸 것은?
 
 <p>
-    가. 
+
+가. 
 
 <pre>
 'data.frame':	3 obs. of  3 variables:
@@ -355,7 +356,8 @@ df <- data.frame(face = c("ace", "two", "six"),
  $ value: num  1 2 6
 </pre>
 
-    나. 
+나. 
+
 <pre>
  'data.frame':	3 obs. of  3 variables:
  $ face : Factor w/ 3 levels "ace","two","six": 1 2 3
@@ -363,7 +365,7 @@ df <- data.frame(face = c("ace", "two", "six"),
  $ value: num  1 2 6
 </pre>
  
-    다. 
+다. 
  
 <pre>
  'data.frame':	3 obs. of  3 variables:
@@ -372,7 +374,7 @@ df <- data.frame(face = c("ace", "two", "six"),
  $ value: num  1 2 6
 </pre>
 
-    라.
+라.
 
 <pre>
  'data.frame':	3 obs. of  3 variables:
@@ -386,7 +388,8 @@ df <- data.frame(face = c("ace", "two", "six"),
 (@) `df`의 정의에 `stringsAsFactors = FALSE`를 추가하면 `str(df)` 는 어떻게 나오는가?
 
 <p>
-    가. 
+    
+가. 
 
 <pre>
 'data.frame':	3 obs. of  3 variables:
@@ -395,7 +398,7 @@ df <- data.frame(face = c("ace", "two", "six"),
  $ value: num  1 2 6
 </pre>
 
-    나. 
+나. 
 
 <pre>
  'data.frame':	3 obs. of  3 variables:
@@ -404,7 +407,7 @@ df <- data.frame(face = c("ace", "two", "six"),
  $ value: num  1 2 6
 </pre>
  
-     다. 
+다. 
  
 <pre>
  'data.frame':	3 obs. of  3 variables:
@@ -413,7 +416,7 @@ df <- data.frame(face = c("ace", "two", "six"),
  $ value: num  1 2 6
 </pre>
 
-     라.
+라.
 
 <pre>
  'data.frame':	3 obs. of  3 variables:
@@ -441,32 +444,32 @@ df <- data.frame(face = c("ace", "two", "six"),
 
 <p>
 
-    가.
+가.
 
 ```
 url <- "https://raw.githubusercontent.com/coop711/r_programming/master/data/cards.csv"
 deck <- read.csv(url)
 ```
 
-    나.
+나.
 
 ```
 url <- https://raw.githubusercontent.com/coop711/r_programming/master/data/cards.csv
 deck <- read.csv(url)
 ```
 
-    다.
+다.
 
 ```
 url <- "https://raw.githubusercontent.com/coop711/r_programming/master/data/cards.csv"
-deck <- read.csv(url, stringsAsaaFactors = FALSE)
+deck <- read.csv(url, stringsAsFactors = FALSE)
 ```
 
-    라.
+라.
 
 ```
 url <- https://raw.githubusercontent.com/coop711/r_programming/master/data/cards.csv
-deck <- read.csv(url, stringsAsaaFactors = FALSE)
+deck <- read.csv(url, stringsAsFactors = FALSE)
 ```
 
 (@) 위와 같이 읽어들인 `deck`을 작업 디렉토리와 같은 위치에 있는 `data` 폴더에 `cards.csv`라는 이름으로 저장하고자 한다. 단, 첫 열에 나오는 일련번호를 없애고자 할 때 적절한 코드는?

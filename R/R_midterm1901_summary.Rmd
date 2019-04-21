@@ -1,0 +1,236 @@
+---
+title: "R Programming Midterm 201901 - Analysis"
+author: "coop711"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+## Data 
+
+## Excel 자료 읽어들이기 
+
+01반과 02반의 응답 코딩시트를 각각 읽어들이고 `rbind`를 이용하여 합친다.
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(xlsx)
+library(pander)
+library(knitr)
+options(width=180)
+```
+
+```{r, echo = TRUE, results = 'markup'}
+midterm_roll01 <- read.xlsx("../data/midterm1901_01.xlsx", 
+                          sheetIndex = 1, 
+                          startRow = 3, 
+                          endRow  = 41, 
+                          colIndex = c(4, 10:49), 
+                          colClasses = rep("character", 41), 
+                          encoding = "UTF-8",
+                          header = FALSE, 
+                          stringsAsFactors = FALSE)
+midterm_roll02 <- read.xlsx("../data/midterm1901_02.xlsx", 
+                          sheetIndex = 1, 
+                          startRow = 3, 
+                          endRow  = 41, 
+                          colIndex = c(4, 10:49), 
+                          colClasses = rep("character", 41), 
+                          encoding = "UTF-8",
+                          header = FALSE, 
+                          stringsAsFactors = FALSE)
+midterm_roll <- rbind(midterm_roll01, midterm_roll02)
+names(midterm_roll) <- c("id", paste("Q", 1:40, sep = ""))
+kable(head(midterm_roll[, 2:21]))
+kable(head(midterm_roll[, 22:41]))
+```
+
+```{r, echo = FALSE, results = "markup"}
+str(midterm_roll)
+midterm <- midterm_roll[, -1]
+kable(midterm[1:20])
+kable(midterm[21:40])
+```
+
+# `factor` 변환
+
+```{r}
+midterm <- lapply(midterm, FUN = factor, levels = 1:4, 
+                  labels = c("가", "나", "다", "라"))
+str(midterm)
+midterm <- data.frame(midterm, row.names = NULL)
+str(midterm)
+```
+
+# 답안 분포
+
+```{r, kable midterm, echo = TRUE}
+kable(midterm[1:20])
+kable(midterm[21:40])
+kable(t(sapply(midterm, table)))
+```
+
+# barplot
+
+막대그래프로 답안 분포를 시각적으로 살핀다. 차후 나오는 정답률과 함께 어느 문항에서 어느 답안을 많이 고르는지 파악하는 데 활용한다.
+
+```{r}
+midterm_tbl <- sapply(midterm, table, useNA = "no")
+kable(midterm_tbl[, 1:20])
+kable(midterm_tbl[, 21:40])
+str(midterm_tbl)
+midterm_ptbl <- round(apply(midterm_tbl, MARGIN = 2, prop.table) * 100, 
+                      digits = 0)
+kable(midterm_ptbl[, 1:20])
+kable(midterm_ptbl[, 21:40])
+str(midterm_ptbl)
+label_ptbl <- matrix(paste0(format(midterm_ptbl, digits = 2, nsmall = 0), "%"), nrow = 4)
+label_ptbl <- ifelse(label_ptbl == "  0%", "", label_ptbl)
+label_ptbl[, 1:10]
+```
+
+```{r, fig.width = 8, fig.height = 12}
+par(family = "HCR Dotum LVT", mar = c(5.1, 4.1, 4.1, 8.1))
+b <- barplot(matrix(midterm_tbl, nrow = 4), 
+             horiz = TRUE, 
+             axes = FALSE, 
+             col = rainbow(4), 
+             names.arg = colnames(midterm_tbl), 
+             las = 1, 
+             xpd = TRUE, 
+             legend.text = rownames(midterm_tbl), 
+             args.legend = list(x = 90, y = 48))
+max(b)
+midterm_tbl[1, ]
+text(x = midterm_tbl[1, ] / 2, 
+     y = b, 
+     labels = label_ptbl[1, ])
+text(x = midterm_tbl[1, ] + midterm_tbl[2, ] / 2 , 
+     y = b, 
+     labels = label_ptbl[2, ])
+text(x = midterm_tbl[1, ] + midterm_tbl[2, ] + midterm_tbl[3, ] / 2, 
+     y = b, 
+     labels = label_ptbl[3, ])
+text(x = midterm_tbl[1, ] + midterm_tbl[2, ] + midterm_tbl[3, ] + midterm_tbl[4, ]/ 2, 
+     y = b, 
+     labels = label_ptbl[4, ])
+```
+
+## 점수
+
+정답과 맞춰보기 위해서는 정답을 읽어들여야 하는데 이를 위해서 `what = ""`로 설정하여 `char`취급. 
+
+```{r, read ans, echo = TRUE, results = 'markup'}
+(ans <- scan("../data/midterm_ans.txt", what = ""))
+```
+
+각 학생들의 답안과 맞춰보려면 정답표를 작성하여야 하는데 이렇게 하시 위해서 각 문항을 리스트의 원소로 분리하는데 이때 `split()` 의 기능과 한계에 유의. `factor` 성격으로부터 `1, 10, 11, ..., 2, 20, ..., 3, 4, 5, ... , 9`로 순서를 잡게 되므로 다시 한번 정리할 필요.
+    
+```{r, ans list and unlist, echo = TRUE, results = 'markup'}
+(ans_l <- split(ans, f = paste("A", 1:40, sep = "")))
+(ans_l_2 <- ans_l[paste("A", 1:40, sep = "")])
+```
+
+### 정답과 대조하여 R(Right)/W(Wrong) 표시 
+    
+채점표라는 의미의 `midterm_marks` 로 저장, (# 표시한 방식으로는 작동하지 않음)
+    
+```{r, marks, echo = TRUE}
+midterm_marks_rw <- mapply(function(x, y) factor(ifelse(x == y, "R", "W")), y = ans_l_2, midterm)
+kable(midterm_marks_rw[, 1:20])
+kable(midterm_marks_rw[, 21:40])
+```
+
+<P style = "page-break-before:always">
+
+### 학생별 점수 산출
+
+정답을 집계하기 위하여 "R" 갯수를 다시 산출하는 `ifelse()` 적용.
+2.5점씩 곱하면 100점 만점 기준의 점수가 됨. 답안지는 작성해서 제출했지만 빈칸이 있는 경우는 그 문항을 0점 처리, 결석의 경우는 점수가 모두 0으로 나오는 경우를 `NA`처리 
+
+```{r, sum of rights answers, echo = TRUE, results = 'markup'}
+midterm_marks <- ifelse(midterm_marks_rw == "R", 1, 0)
+kable(midterm_marks[, 1:20])
+kable(midterm_marks[, 21:40])
+midterm_score <- midterm_marks * 2.5
+kable(data.frame("순번" = 1:nrow(midterm), midterm_score)[1:20])
+kable(data.frame("순번" = 1:nrow(midterm), midterm_score)[21:40])
+midterm_score <- apply(midterm_marks, 1, sum, na.rm = TRUE) * 2.5
+midterm_score[midterm_score == 0] <- NA
+which(midterm_score < 60)
+```
+
+```{r, kable score, echo = TRUE}
+kable(data.frame("순번" = 1:nrow(midterm), "점수" = midterm_score))
+```
+
+<P style = "page-break-before:always">
+
+
+### 문항별 정답률
+
+결석한 경우와 일부 문항에 답을 내지 않은 경우를 구분하는 것이 핵심인데 `midterm_marks`를 그대로 이용하면 쉽게 계산되나, `is.na`학습 목적으로 `midterm_mark.rw`에서 출발한다.
+모든 문항에 NA로 답한 결석한 학생들의 인덱스를 먼저 찾아내고,
+
+```{r, NA management, echo = TRUE, results = 'markup'}
+apply(midterm_marks_rw, 1, function(x) all(is.na(x)))
+na_all <- which(apply(midterm_marks_rw, 1, function(x) all(is.na(x))))
+```
+
+정답률을 계산하기 위하여 일단 `NA`를 모두 오답처리한 후, 결석한 학생들만 다시 `NA`로 정정한다.
+TRUE의 갯수를 합하여 평균을 낸다. 
+
+```{r, computing correct answer rates, echo = TRUE, results = 'markup'}
+midterm_marks_2 <- midterm_marks_rw
+midterm_marks_2[is.na(midterm_marks_2)] <- "W"
+midterm_marks_2[na_all, ] <- NA
+midterm_marks_2 <- ifelse(midterm_marks_2 == "R", 1, 0)
+rate_by_item <- apply(midterm_marks_2, 2, mean, na.rm = TRUE) * 100
+str(rate_by_item)
+rate_by_item <- as.matrix(rate_by_item, 40)
+dimnames(rate_by_item) <- list("문항" =  paste("문", 1:40, sep = ""), "정답률" = "정답률")
+colnames(rate_by_item) <- "정답률"
+```
+
+```{r, correct answer rates, echo = TRUE}
+kable(rate_by_item, digits = 1)
+```
+
+<!--<P style = "page-break-before:always">-->
+
+## 어려운 문제?
+
+### 정답률 60% 이하
+
+```{r, hardest question below 60, echo = TRUE}
+options(digits = 3)
+kable(t(rate_by_item[which(rate_by_item <= 60), , drop = FALSE]))
+```
+
+### 정답률 50% 이하
+
+```{r, hardest question below 50, echo = TRUE}
+options(digits = 3)
+kable(t(rate_by_item[which(rate_by_item <= 50), , drop = FALSE]))
+```
+
+### 정답률 40% 이하
+
+```{r, hardest question below 40, echo = TRUE}
+options(digits = 3)
+kable(t(rate_by_item[which(rate_by_item <= 40), , drop = FALSE]))
+```
+
+### 정답률 30% 이하
+
+```{r, hardest question below 30, echo = TRUE}
+options(digits = 3)
+kable(t(rate_by_item[which(rate_by_item <= 30), , drop = FALSE]))
+```
+
+
+<!--## Data 정리
+
+```{r}
+save.image("midterm_RData")
+```
+-->
