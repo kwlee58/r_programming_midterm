@@ -274,7 +274,9 @@ literacy %$%
 ## 문해력 등급 분포
     
 ```{r, literacy grade, echo = FALSE}
-grade <- ifelse(score <= 24, "I", ifelse(score <= 48, "II", ifelse(score <= 72, "III", "IV"))) %>%
+grade <- ifelse(score <= 24, "I", 
+                ifelse(score <= 48, "II", 
+                       ifelse(score <= 72, "III", "IV"))) %>%
                   factor(levels = c("I", "II", "III", "IV"))
 grade_tbl <- grade %>%
   table("문해력 등급 분포" = ., exclude = NULL) %>%

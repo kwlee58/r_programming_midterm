@@ -74,18 +74,6 @@ midterm_df <- midterm[1:40] %>%
 str(midterm_df)
 ```
 
-<!--
-## `factor` 변환
--->
-
-```{r, eval = FALSE, echo = FALSE}
-midterm <- lapply(midterm, FUN = factor, levels = 1:4, 
-                  labels = c("가", "나", "다", "라"))
-str(midterm)
-midterm <- data.frame(midterm, row.names = NULL)
-str(midterm)
-```
-
 # Barplot
 
 막대그래프로 답안 분포를 시각적으로 살핀다. 차후 나오는 정답률과 함께 어느 문항에서 어느 답안을 많이 고르는지 파악하는 데 활용한다.
@@ -95,16 +83,18 @@ library(RColorBrewer)
 par(family = "", mar = c(5.1, 4.1, 4.1, 8.1))
 midterm_tbl <- midterm_df %>%
   sapply(FUN = table, useNA = "no")
-kable(midterm_tbl, caption = "Counts")
+kable(midterm_tbl[, 1:20], caption = "Counts")
+kable(midterm_tbl[, 21:40], caption = "Counts")
 midterm_ptbl <- midterm_tbl %>%
   apply(MARGIN = 2, FUN = prop.table) %>%
   `*`(100) %>%
   round(digits = 0)
-kable(midterm_ptbl, caption = "%")
+kable(midterm_ptbl[, 1:20], caption = "%")
+kable(midterm_ptbl[, 21:40], caption = "%")
 label_ptbl <- midterm_ptbl %>%
   format(digits = 2, nsmall = 0) %>%
   paste0("%") %>%
-  ifelse(. %in% c(" 0%", " 1%", " 2%"), "", .) %>%
+  ifelse(. %in% c("  0%", "  1%", "  2%"), "", .) %>%
   matrix(nrow = 4)
 b <- barplot(matrix(midterm_tbl, nrow = 4), 
              horiz = TRUE, 
@@ -115,7 +105,7 @@ b <- barplot(matrix(midterm_tbl, nrow = 4),
              las = 1, 
              xpd = TRUE, 
              legend.text = rownames(midterm_tbl), 
-             args.legend = list(x = 180, y = 25))
+             args.legend = list(x = 90, y = 45))
 # max(b)
 #midterm_tbl[1, ]
 text(x = midterm_tbl[1, ] / 2, 
@@ -159,7 +149,10 @@ ans
 marks_rw <- midterm_df %>%
   `==`(ans) %>%
   ifelse("R", "W") 
-marks_rw %>%
+marks_rw[, 1:20] %>%
+  head %>%
+  pander
+marks_rw[, 21:40] %>%
   head %>%
   pander
 ```
@@ -203,7 +196,7 @@ score %>%
 ```{r, stem-and-leaf, echo = FALSE}
 # stem(score, scale = 2)
 score %>%
-  stem(scale = 0.5)
+  stem(scale = 1)
 Red <- midterm %$%
   `==`(group, "01")
 Black <- midterm %$%
@@ -223,7 +216,7 @@ score %>%
 ```{r, stem for Black}
 score %>%
   `[`(midterm$group == "02") %>%
-  stem(scale = 0.5)
+  stem(scale = 1)
 ```
 
 <P style = "page-break-before:always">
@@ -262,7 +255,7 @@ plot(add = TRUE)
 
 ## t test
 
-Red 와 Black으로부터 관찰된 점수들에 대하여 t test를 적용하였더니 통계적으로 유의한 차이가 관찰됨. 랜덤화 효과 확인결과에 비추어 매우 특이한 상황임.
+01반과 02반의 관찰된 점수들에 대하여 t test를 적용하였더니 통계적으로 유의한 차이가 관찰지 않는다. 
 
 ```{r, t test, echo = FALSE}
 midterm %$%
@@ -270,7 +263,44 @@ midterm %$%
   pander
 ```
 
+# 복습문제 풀이 효과
 
+```{r, item by type, echo = FALSE}
+type_kr <- "../data/midterm_type.txt" %>%
+  scan(what = "") %>%
+  factor(levels = c("Pre", "No"), 
+         labels = c("기출문제", "신규문제"))
+```
+
+<!--* 유형별 점수 파악
+    * 왜 `marks`의 전치행렬을 사용하고 있는지 이해 필요.
+    * 변수들은 사실상 각 학생을 나타내므로 변수명을 `s1, s2, ...` 등으로 바꿈.
+    * 일부 문항의 응답이 NA이면 그 문항을 0점 처리, 결석이면 NA 처리. 
+-->
+
+```{r, echo = FALSE, results = 'hide', eval = TRUE}
+score_type <- marks %>%
+  t %>%
+  aggregate(list("유형" = type_kr), FUN = sum, na.rm = TRUE)
+score_type
+score_type <- aggregate(t(marks), list("유형" = type_kr), 
+                        FUN = sum, na.rm = TRUE)
+score_type == 0
+score_type[score_type == 0] <- NA
+score_type_student <- score_type %>%
+  `[`(-1) %>%
+  t
+  t(score_type[, -1])
+N <- nrow(midterm)
+dimnames(score_type_student) <- list(paste0("s", 1:N), 
+                                     paste0(levels(type_kr), c("(50점)", "(50점)")))
+```
+
+```{r, scores by types, echo = FALSE, results = 'markup', eval = TRUE}
+score_type_student %>%
+  `*`(2.5) %>%
+  pander
+```
 <!--#### 문항별 정답률-->
 
 <!--* 결석한 경우와 일부 문항에 답을 내지 않은 경우를 구분하는 것이 핵심.
@@ -289,7 +319,7 @@ na_all <- marks_rw %>%
     + TRUE의 갯수를 합하여 평균. 
 -->
 
-```{r, computing correct answer rates, echo = FALSE, results = 'hide', eval = TRUE}
+```{r, computing correct answer rates, echo = FALSE, results = "hide", eval = TRUE}
 marks_2 <- marks_rw
 marks_2[is.na(marks_2)] <- "W"
 marks_2[na_all, ] <- NA
@@ -302,9 +332,23 @@ rate_item <- marks_2 %>%
 str(rate_item)
 rate_item %<>% 
   round(digits = 1) %>%
-  as.matrix(nrow = 25)
+  as.matrix(nrow = 40)
 dimnames(rate_item) <- list("문항" =  paste0("문", 1:40), 
                             "정답률" = "정답률")
+```
+
+## 유형별 정답률
+
+```{r, rates by types, echo = FALSE, eval = TRUE}
+rate_item_type <- data.frame("유형" = type_kr, "정답률" = rate_item)
+dimnames(rate_item_type) <- list("문항" = paste0("문", 1:40), 
+                                 "유형과 정답률" = c("유형", "정답률(%)"))
+rate_item_type %>%
+  format(digits = 3, nsmall = 1) %>%
+  kable(align = c("l", "r"))
+rate_item_type %$%
+  tapply(.$"정답률(%)", .$"유형", summary) %>%
+  pander
 ```
 
 

@@ -1,0 +1,402 @@
+---
+title: "R Programming Midterm Result : Analytics"
+author: "coop711"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+<!--
+### Data 
+-->
+
+<!--### Excel 자료 읽어들이기 
+
+* excel 파일을 잘 읽어들이는 `xlsx` 패키지를 올려놓고, 자료구조에 맞춰 argument 설정.
+    * Sheet 번호, startRow, colIndex, header 의 용도 파악. 
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(xlsx)
+library(pander)
+library(knitr)
+library(magrittr)
+panderOptions('table.split.table', Inf)
+panderOptions('table.alignment.rownames', 'left')
+panderOptions('table.alignment.default', 'right')
+options(width=180)
+# panderOptions('digits', 3)
+```
+
+
+```{r, read data, echo = FALSE, results = 'hide'}
+midterm_roll01 <- read.xlsx("../data/midterm1901_01.xlsx", 
+                          sheetIndex = 1, 
+                          startRow = 3, 
+                          endRow  = 41, 
+                          colIndex = c(4, 10:49), 
+                          colClasses = rep("character", 41), 
+                          encoding = "UTF-8",
+                          header = FALSE, 
+                          stringsAsFactors = FALSE)
+midterm_roll02 <- read.xlsx("../data/midterm1901_02.xlsx", 
+                          sheetIndex = 1, 
+                          startRow = 3, 
+                          endRow  = 41, 
+                          colIndex = c(4, 10:49), 
+                          colClasses = rep("character", 41), 
+                          encoding = "UTF-8",
+                          header = FALSE, 
+                          stringsAsFactors = FALSE)
+names(midterm_roll01) <- c("id", paste("Q", 1:40, sep = ""))
+names(midterm_roll02) <- c("id", paste("Q", 1:40, sep = ""))
+midterm_roll01$group <- "01"
+midterm_roll02$group <- "02"
+midterm_roll <- rbind(midterm_roll01, midterm_roll02)
+names(midterm_roll) <- c("id", paste0("Q", 1:40), "group")
+head(midterm_roll$id)
+str(midterm_roll)
+kable(midterm_roll)
+#>문해력 집계에 필요한 변수만 추출 (id 는 불필요)
+midterm <- midterm_roll[, c(2:42)] #> 문해력 집계에 필요한 변수만 추출. 
+kable(midterm)
+```
+
+
+## `factor` 변환
+
+
+```{r, echo = FALSE, eval = TRUE, results = "hide"}
+midterm_df <- midterm[1:40] %>%
+  lapply(FUN = factor, levels = 1:4, 
+         labels = c("가", "나", "다", "라")) %>%
+  data.frame(row.names = NULL)
+str(midterm_df)
+```
+
+# Barplot
+
+막대그래프로 답안 분포를 시각적으로 살핀다. 차후 나오는 정답률과 함께 어느 문항에서 어느 답안을 많이 고르는지 파악하는 데 활용한다.
+
+```{r, echo = FALSE, fig.width = 9, fig.height = 12}
+library(RColorBrewer)
+par(family = "", mar = c(5.1, 4.1, 4.1, 8.1))
+midterm_tbl <- midterm_df %>%
+  sapply(FUN = table, useNA = "no")
+kable(midterm_tbl[, 1:20], caption = "Counts")
+kable(midterm_tbl[, 21:40], caption = "Counts")
+midterm_ptbl <- midterm_tbl %>%
+  apply(MARGIN = 2, FUN = prop.table) %>%
+  `*`(100) %>%
+  round(digits = 0)
+kable(midterm_ptbl[, 1:20], caption = "%")
+kable(midterm_ptbl[, 21:40], caption = "%")
+label_ptbl <- midterm_ptbl %>%
+  format(digits = 2, nsmall = 0) %>%
+  paste0("%") %>%
+  ifelse(. %in% c("  0%", "  1%", "  2%"), "", .) %>%
+  matrix(nrow = 4)
+b <- barplot(matrix(midterm_tbl, nrow = 4), 
+             horiz = TRUE, 
+             axes = FALSE, 
+#              col = rainbow(4), 
+             col = brewer.pal(4, "Accent"),
+             names.arg = colnames(midterm_tbl), 
+             las = 1, 
+             xpd = TRUE, 
+             legend.text = rownames(midterm_tbl), 
+             args.legend = list(x = 90, y = 45))
+# max(b)
+#midterm_tbl[1, ]
+text(x = midterm_tbl[1, ] / 2, 
+     y = b, 
+     labels = label_ptbl[1, ])
+text(x = midterm_tbl[1, ] + midterm_tbl[2, ] / 2, 
+     y = b, 
+     labels = label_ptbl[2, ])
+text(x = midterm_tbl[1, ] + midterm_tbl[2, ] + midterm_tbl[3, ] / 2, 
+     y = b, 
+     labels = label_ptbl[3, ])
+text(x = midterm_tbl[1, ] + midterm_tbl[2, ] + midterm_tbl[3, ] + midterm_tbl[4, ]/ 2, 
+     y = b, 
+     labels = label_ptbl[4, ])
+```
+
+# 점수 계산
+
+* 정답 맞춰보기
+    * 정답 읽어들이기. `what = ""`로 설정하여 `char`취급. 
+
+* 각 학생들의 답안과 맞춰보기 위하여 정답표 작성.
+    * 문항별로 정답과 비교하기 위하여 각 문항을 리스트의 원소로 분리
+    * `split()` 의 기능과 한계에 유의. `factor` 성격으로부터 `1, 10, 11, ..., 2, 20, ..., 3, 4, 5, ... , 9`로 순서를 잡게 되므로 다시 한번 정리할 필요.
+    
+    
+```{r, ans list and unlist, echo = FALSE, results = 'hide'}
+ans <- "../data/midterm_ans.txt" %>%
+  scan(what = "") %>%
+  split(f = paste0("A", 1:40)) %>%
+  `[`(paste0("A", 1:40))
+ans
+```
+
+## 정답과 대조하여 R(Right)/W(Wrong) 표시 
+    
+* 채점표라는 의미의 `marks` 로 저장, (# 표시한 방식으로는 작동하지 않음)
+-->
+    
+```{r, marks, echo = FALSE}
+marks_rw <- midterm_df %>%
+  `==`(ans) %>%
+  ifelse("R", "W") 
+marks_rw[, 1:20] %>%
+#  head %>%
+  pander
+marks_rw[, 21:40] %>%
+#  head %>%
+  pander
+```
+
+## 학생별 점수 산출
+
+<!--+ 정답을 집계하기 위하여 "R" 갯수를 다시 산출하는 `ifelse()` 적용.
+    + 4점씩 곱하면 100점 만점 기준의 점수가 됨. 
+    + 조사표는 작성해서 제출했지만 빈칸이 있는 경우는 그 문항을 0점 처리, 결석의 경우는 점수가 모두 0으로 나오는 경우를  NA처리 
+-->
+
+```{r, sum of rights answers, echo = FALSE, results = 'hide'}
+marks <- marks_rw %>%
+  `==`("R") %>%
+  ifelse(1, 0)
+score <- marks %>%
+  apply(MARGIN = 1, FUN = sum, na.rm = TRUE) %>%
+  `*`(2.5)
+score[score == 0] <- NA
+which(score <= 60)
+```
+
+```{r, pander score, echo = FALSE}
+score %>%
+  cbind("분반" = midterm$group, "학번" = midterm_roll$id, "점수" = .) %>%
+  pander
+```
+
+<P style = "page-break-before:always">
+
+<!--
+# 분반 비교
+
+## Summary
+
+```{r, summary by group, echo = FALSE}
+score %>%
+  tapply(., midterm$group, FUN = { . %>% summary %>% round(digits = 1) }) %>%
+  pander
+```
+
+## Stem and Leaf
+
+```{r, stem-and-leaf, echo = FALSE}
+# stem(score, scale = 2)
+score %>%
+  stem(scale = 1)
+Red <- midterm %$%
+  `==`(group, "01")
+Black <- midterm %$%
+  `==`(group, "02")
+```
+
+- 01반
+
+```{r, stem for Red}
+score %>%
+  `[`(midterm$group == "01") %>%
+  stem(scale = 0.5)
+```
+
+- 02반
+
+```{r, stem for Black}
+score %>%
+  `[`(midterm$group == "02") %>%
+  stem(scale = 1)
+```
+
+<P style = "page-break-before:always">
+
+### Plots
+
+## Box Plots
+
+```{r, boxplots, echo = FALSE, fig.width = 6, fig.height = 6}
+score %>%
+  plot(factor(midterm$group), .)
+```
+
+## QQ plot
+
+```{r, qqplots, echo = FALSE, fig.width = 6, fig.height = 6}
+qqplot(x = score[Red], y = score[Black], 
+       xlab = "01", ylab = "02", 
+       xlim = c(20, 100), ylim = c(20, 100))
+```
+
+<P style = "page-break-before:always">
+
+## ECDF plot
+
+```{r, ECDF, echo = FALSE, fig.width = 6, fig.height = 6, eval = TRUE}
+score %>%
+`[`(Red & !is.na(score)) %>%
+ecdf %>%
+plot(xlim = score %>% range(na.rm = TRUE), col = "red", main = "ECDF")
+score %>%
+`[`(Black & !is.na(score)) %>%
+ecdf %>%
+plot(add = TRUE)
+```
+
+## t test
+
+01반과 02반의 관찰된 점수들에 대하여 t test를 적용하였더니 통계적으로 유의한 차이가 관찰지 않는다. 
+
+```{r, t test, echo = FALSE}
+midterm %$%
+  t.test(score ~ .$group) %>%
+  pander
+```
+
+# 복습문제 풀이 효과
+
+```{r, item by type, echo = FALSE}
+type_kr <- "../data/midterm_type.txt" %>%
+  scan(what = "") %>%
+  factor(levels = c("Pre", "No"), 
+         labels = c("기출문제", "신규문제"))
+```
+
+<!--* 유형별 점수 파악
+    * 왜 `marks`의 전치행렬을 사용하고 있는지 이해 필요.
+    * 변수들은 사실상 각 학생을 나타내므로 변수명을 `s1, s2, ...` 등으로 바꿈.
+    * 일부 문항의 응답이 NA이면 그 문항을 0점 처리, 결석이면 NA 처리. 
+
+```{r, echo = FALSE, results = 'hide', eval = TRUE}
+score_type <- marks %>%
+  t %>%
+  aggregate(list("유형" = type_kr), FUN = sum, na.rm = TRUE)
+score_type
+score_type <- aggregate(t(marks), list("유형" = type_kr), 
+                        FUN = sum, na.rm = TRUE)
+score_type == 0
+score_type[score_type == 0] <- NA
+score_type_student <- score_type %>%
+  `[`(-1) %>%
+  t
+  t(score_type[, -1])
+N <- nrow(midterm)
+dimnames(score_type_student) <- list(paste0("s", 1:N), 
+                                     paste0(levels(type_kr), c("(50점)", "(50점)")))
+```
+
+```{r, scores by types, echo = FALSE, results = 'markup', eval = TRUE}
+score_type_student %>%
+  `*`(2.5) %>%
+  pander
+```
+<!--#### 문항별 정답률-->
+
+<!--* 결석한 경우와 일부 문항에 답을 내지 않은 경우를 구분하는 것이 핵심.
+    + `marks`를 그대로 이용하면 쉽게 계산되나, `is.na`학습 목적으로 `midterm.mark.rw`에서 출발
+    + 모든 문항에 NA로 답한 결석한 학생들의 인덱스를 먼저 찾아내고,
+
+```{r, NA management, echo = FALSE, results = 'hide'}
+na_all <- marks_rw %>%
+  apply(MARGIN = 1, {. %>% is.na %>% all }) %>%
+  which
+```
+
+<!--* 정답률 계산
+    + NA를 모두 오답처리한 후, 결석한 학생들만 다시 NA로 정정.
+    + TRUE의 갯수를 합하여 평균. 
+
+```{r, computing correct answer rates, echo = FALSE, results = "hide", eval = TRUE}
+marks_2 <- marks_rw
+marks_2[is.na(marks_2)] <- "W"
+marks_2[na_all, ] <- NA
+marks_2 %<>% 
+  `==`("R") %>%
+  ifelse(1, 0)
+rate_item <- marks_2 %>% 
+  apply(MARGIN = 2, FUN = mean, na.rm = TRUE) %>%
+  `*`(100)
+str(rate_item)
+rate_item %<>% 
+  round(digits = 1) %>%
+  as.matrix(nrow = 40)
+dimnames(rate_item) <- list("문항" =  paste0("문", 1:40), 
+                            "정답률" = "정답률")
+```
+
+## 유형별 정답률
+
+```{r, rates by types, echo = FALSE, eval = TRUE}
+rate_item_type <- data.frame("유형" = type_kr, "정답률" = rate_item)
+dimnames(rate_item_type) <- list("문항" = paste0("문", 1:40), 
+                                 "유형과 정답률" = c("유형", "정답률(%)"))
+rate_item_type %>%
+  format(digits = 3, nsmall = 1) %>%
+  kable(align = c("l", "r"))
+rate_item_type %$%
+  tapply(.$"정답률(%)", .$"유형", summary) %>%
+  pander
+```
+
+
+<!--<P style = "page-break-before:always">
+
+## 어려운 문제?
+
+### 정답률 80% 이하
+
+```{r, hardest question below 80, echo = FALSE, eval = TRUE}
+rate_item %>%
+  `[`(. <= 80, , drop = FALSE) %>%
+  t %>%
+  kable
+```
+
+### 정답률 70% 이하
+
+```{r, hardest question below 70, echo = FALSE, eval = TRUE}
+rate_item %>%
+  `[`(. <= 70, , drop = FALSE) %>%
+  t %>%
+  kable
+```
+
+### 정답률 60% 이하
+
+```{r, hardest question below 60, echo = FALSE, eval = TRUE}
+rate_item %>%
+  `[`(. <= 60, , drop = FALSE) %>%
+  t %>%
+  kable
+```
+
+### 정답률 50% 이하
+
+```{r, hardest question below 50, echo = FALSE, eval = TRUE}
+rate_item %>%
+  `[`(. <= 50, , drop = FALSE) %>%
+  t %>%
+  kable
+```
+
+### 정답률 40% 이하
+
+```{r, hardest question below 40, echo = FALSE, eval = TRUE}
+rate_item %>%
+  `[`(. <= 40, , drop = FALSE) %>%
+  t %>%
+  kable
+```
+-->
