@@ -146,7 +146,7 @@ roll2 <- function(bones) {
 
     라. `qplot(rolls, binwidth = 1)`
 
-(@) `roll`함수를 편집하여 확률 조건을 추가한 `roll.w`를 만들려고 할 때 필요한 코드는? (단, 여기서 `;` 는 그 다음 코드를 이어서 수행하라는 것이다.)
+(@) `roll`함수를 편집하여 확률 조건을 추가한 `roll_w`를 만들려고 할 때 필요한 코드는? (단, 여기서 `;` 는 그 다음 코드를 이어서 수행하라는 것이다.)
 
     가. `roll.w <- roll ; fix(roll.w)`
 
@@ -323,7 +323,7 @@ $R
 
 (@) `logical` 중 첫번쨰 `TRUE` 를 불러내는 코드는 무엇인가? (즉,  `[1] TRUE` 가 나오는 코드는?)
 
-    가. ` list2[3][[1]][[1]]`
+    가. `list2[3][[1]][[1]]`
 
     나. `list2[3][[1]][1]`
 
@@ -461,7 +461,7 @@ deck <- read.csv(url)
 다.
 
 ```
-url <- "https://raw.githubusercontent.com/coop711/r_programming/master/data/cards.csv"
+url <- "https://raw.githubusercontent.com/coop711/r_programming_1/master/data/cards.csv"
 deck <- read.csv(url, stringsAsFactors = FALSE)
 ```
 
@@ -579,7 +579,7 @@ deck <- read.csv(url, stringsAsFactors = FALSE)
 
     다. `deck3$face = "ace"`
 
-    라. `which(deck3$face = "ace"`
+    라. `which(deck3$face = "ace")`
 
 (@) 위의 `deck3`에서 `ace`가 들어 있는 카드를 모두 뽑아 보는 코드로 적합한 것은?
 

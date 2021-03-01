@@ -220,14 +220,6 @@ options(digits = 3)
 kable(t(rate_by_item[which(rate_by_item <= 40), , drop = FALSE]))
 ```
 
-### 정답률 30% 이하
-
-```{r, hardest question below 30, echo = TRUE}
-options(digits = 3)
-kable(t(rate_by_item[which(rate_by_item <= 30), , drop = FALSE]))
-```
-
-
 <!--## Data 정리
 
 ```{r}

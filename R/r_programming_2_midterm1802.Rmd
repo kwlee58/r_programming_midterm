@@ -1,0 +1,412 @@
+---
+title: "응용프로그래밍 중간고사"
+author: "coop711"
+date: "2018-10-21"
+output: html_document
+---
+
+학번 ________________ 
+
+이름 ________________
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+(@) 다음 `VADeaths`를 그 아래의 깔끔한(tidy) `VADeaths_tbl` 로 바꾸는 과정을 흐트러 놓았다.
+순서대로 정리하시오. 
+
+<!--
+(사-다-나-가-라-마-바)
+-->
+
+```{r VADeaths}
+VADeaths
+```
+
+```{r, echo = FALSE, warning = FALSE, message = FALSE}
+library(tidyverse) # `tidyverse`를 검색 경로에 올려 놓음. 함께 불러들이는 패키지들과 경고문에 유의.
+VADeaths_tbl <- VADeaths %>% # 최종 결과물을 `tibble` 형식으로 지정.
+  as_tibble() %>% # 행렬 구조를 `tibble`구조로 변환. `tbl_df()`는 더 이상 사용되지 않음. 
+  mutate(Age = row.names(VADeaths)) %>% # 행 이름으로 주어진 연령대를 글자벡터로 생성 
+  gather(key = Place_Gender, # `Age`를 제외한 나머지 뱐수를 `key, value`쌍으로 정리하면서 새로운 변수명 부여.
+         value = Rates, 
+         -Age) %>%
+  separate(Place_Gender, c("Place", "Gender"), # `Place_Gender`를 `Place`와 `Gender`로 분리.
+           sep = " ") %>%
+  mutate(Age = ordered(Age), # `Age`, `Place`, `Gender`를 순서형 범주와 명목형 범주로 변환
+         Place = factor(Place), 
+         Gender = factor(Gender,  # `Gender`에서 `level = `를 설정하지 않으면 알파벳 순에 따라 수준이 정해짐.
+                         levels = c("Male", "Female"))) # 즉, `Female`이 1, `Male`이 2가 됨.
+```
+
+```{r}
+VADeaths_tbl 
+```
+
+(가) `mutate(Age = row.names(VADeaths)) %>%`  
+
+(나) `as_tibble() %>%`  
+  
+(라) `gather(key = Place_Gender, value = Rates, -Age) %>%`
+
+(마) `separate(Place_Gender, c("Place", "Gender"), sep = " ") %>%`
+
+(바) `mutate(Age = ordered(Age), Place = factor(Place), Gender = factor(Gender,`  
+               `levels = c("Male", "Female")))` 
+
+(사) `library(tidyverse)` 
+
+<P style = "page-break-before:always">
+
+(@) 위의 `VADeaths_tbl`을 이용하여 다음 막대그래프들을 그릴 때 [대괄호] 자리를 채우시오.
+
+```{r, echo = FALSE, eval = TRUE}
+ggplot(data = VADeaths_tbl,
+              mapping = aes(x = Age, 
+                            y = Rates, 
+                            fill = Age)) +
+geom_bar(stat = "identity", 
+         position = position_dodge()) + 
+scale_fill_grey(guide = FALSE) +
+facet_grid(Gender ~ Place)
+```
+
+```
+ggplot(data = VADeaths_tbl,
+              mapping = aes(x = [대괄호], 
+                            y = [대괄호], 
+                            fill = [대괄호]) +
+geom_bar(stat = "[대괄호]", 
+         position = position_[대괄호]()) + 
+scale_fill_grey([대괄호] = FALSE) +
+facet_grid([대괄호] ~ [대괄호])
+```
+
+(@) 아래 코드 묶음에서 한글이 꺠지는 현상과 관련있는 코드는 어느 부분인가?
+
+```
+class_roll <- read.table("../data/class_roll_masked.txt", 
+                         header = TRUE, 
+                         stringsAsFactors = FALSE, 
+                         encoding = "UTF-8")
+str(class_roll)
+```
+
+가. `read.table`
+
+나. `header = TRUE`
+
+다. `stringsAsFactors = FALSE`
+
+라. `encoding = "UTF-8"`
+
+(@) 아래 코드 묶음에서 괄호 안에 적절한 연산자는 무엇인가?
+
+```
+# set.seed(107)
+N <- nrow(class_roll) 
+class_roll$group <- sample(1:N) (괄호) 2 + 1
+class_roll$group <- factor(class_roll$group, 
+                           labels = c("Red", "Black"))
+red_id <- which(class_roll$group == "Red")
+black_id <- which(class_roll$group == "Black")
+```
+
+가. `%/%`
+
+나. `%%`
+
+다. `%*%`
+
+라. `%o%`
+
+(@)  학번의 첫 네 자리를 읽어들여 16학번을 기준으로 나누고자 다음 코드를 실행하였다. 16학번인 사람은 어느 `label`을 부여받게 되는가?
+
+```
+ID_16 <- factor(ifelse(substr(class_roll$id, 1, 4) >= 2016, 
+                       "younger_16", "older_16"), 
+                levels = c("younger_16", "older_16"))
+```
+
+가. `younger_16`
+
+나. `older_16` 
+
+다. `1`
+
+라. `2`
+
+<P style = "page-break-before:always">
+
+(@) email 서비스 업체가 랜덤하게 잘 나뉘었는지 살피기 위하여 다음 코드를 수행하고자 할 때 (괄호) 자리에 적합한 함수기호는? 
+
+```
+email_list <- strsplit(class_roll$email, "@", fixed = TRUE)
+mail_com <- sapply(email_list, `(괄호)`, 2)
+kable(table("그룹" = class_roll$group,
+            "e-mail" = mail_com))
+```
+
+가. ``[``
+
+나. ``]`` 
+
+다. ``(``
+
+라. ``{``
+
+
+(@) 많이 나오는 성씨(김, 이, 박)들이 양 집단에 고르게 분포하는지 파악하기 위하여 다음 코드를 수행할 때 (괄호) 자리에 적합한 연산자를 고르시오.
+
+```
+f_name_f <- factor(ifelse(f_name (괄호)  c("김", "이", "박"), 
+                          f_name, "기타"), 
+                   levels = c("김", "이", "박", "기타"))
+kable(table("Group" = class_roll$group, 
+            "Family Name" = f_name_f))
+```
+
+가. `%in%`
+
+나. `%%`
+
+다. `%*%`
+
+라. `%o%`
+
+
+(@) 전화번호 끝 네 자리가 천 단위로 균일한 분포에 따르는지 파악하고자 다음 코드를 수행할 때 [대괄호] 자리에 적합한 R 함수는 무엇인가?
+
+```
+cell_numbers <- sapply(substr(class_roll$cell_no, 5, 8), 
+                       as.numeric)
+cut_label <- paste(paste0(1:9, "000"), paste0(1:9, "999"), sep = "~")
+kable(t(table([대괄호](cell_numbers, 
+                  labels = cut_label, 
+                  breaks = seq(1000, 10000, by = 1000)))))
+hist(cell_numbers)
+```
+
+가. `cut`
+
+나. `trim`
+
+다. `cutree`
+
+라. `stem`
+
+<P style = "page-break-before:always">
+
+(@) 아래 코드묶음으로부터 `names(class_roll)[4]`의 결과는 어떻게 나오겠는가?
+
+```
+class_roll <- read.xlsx("../data/class_roll1801.xlsx", 
+                        sheetIndex = 1, 
+                        startRow = 2, 
+                        endRow = 15, 
+                        colIndex = c(3:7, 9), 
+                        colClasses = rep("character", 6), 
+                        encoding = "UTF-8", 
+                        stringsAsFactors = FALSE)
+names(class_roll) <- c("dept", "id", "name", "year", "email", "cell_no")
+names(class_roll)[4]
+```
+
+가. `## [1] "dept"`
+
+나. `## [1] "id"`
+
+다. `## [1] "name"`
+
+라. `## [1] "year"`
+
+(@) 위의 코드 묶음에서 `kable(class_roll)`의 결과가 제대로 나오려면 어떤 코드가 먼저 성공적으로 실행되었어야 하는가?
+
+가. `install.packages("knitr")`
+
+나. `library(knitr)`
+
+다. `update.packages("knitr")`
+
+라. `remove.packages("knitr")`
+
+
+(@) 학번은 입학연도를 나타내는 첫 네자리와 개인 식별번호로 구성되어 있다. 여기서,  개인식별번호를 "9999"로 가리고자 할 때 아래 코드 묶음에서 (괄호) 자리에 적합한 R 함수는 무엇인가?
+
+```
+(괄호)(class_roll$id, start = 5, stop = 8) <- "9999"
+```
+
+가. `sub`
+
+나. `substr`
+
+다. `strsplit`
+
+라. `substring`
+
+
+(@) 각 이름의 2번째 글자 이후를 모두 "ㅇㅇ"으로 대체하고자 할 때 아래 코드 묶음에서 (괄호) 자리에 적합한 R 함수는 무엇인가?
+
+```
+(괄호)(class_roll$name, first = 2) <- "ㅇㅇ"
+```
+
+가. `sub`
+
+나. `substr`
+
+다. `strsplit`
+
+라. `substring`
+
+<P style = "page-break-before:always">
+
+(@) 모바일 폰 번호의 끝 네 자리를 "xxxx" 로 대체하고자 할 때, 아래 코드 묶음에서 (괄호) 자리에 적합한 R 함수는 무엇인가? (정상적으로 번호가 나올 경우 열번째 글자부터 열세번째글자에 해당한다).
+
+```
+(괄호)(class_roll$cell_no, first = 10, last = 13) <- "xxxx"
+kable(head(class_roll))
+```
+
+가. `sub`
+
+나. `substr`
+
+다. `strsplit`
+
+라. `substring`
+
+(@) 전공 단위 이름은 "학과", "과", "학", "전공"  등 매우 다양한 명칭이 있으므로  "ㅇㅇ학과" 로 대체하고자 할 때 괄호에 적합한 R 함수는 무엇인가?
+
+```
+class_roll$dept <- (   )("^.+$", "ㅇㅇ학과", class_roll$dept)
+```
+
+가. `sub`
+
+나. `substr`
+
+다. `strsplit`
+
+라. `substring`
+
+
+(@) email 주소는 `@`를 사이에 두고 나뉘어진다. email 주소에서 서비스업체명은 그대로 두고 개인 식별이 가능한 이름 부분을 `user_name`으로 대체하고자 할 때 괄호에 적합한 R 함수는 무엇인가? 
+
+```
+class_roll$email <- (괄호)("^.+@", "user_name@", class_roll$email)
+```
+
+가. `sub`
+
+나. `substr`
+
+다. `strsplit`
+
+라. `substring`
+
+<P style = "page-break-before:always">
+
+
+(@) 다음 코드에서 각 일련변호를 랜덤하게 늘어놓은 후 5로 나눈 나머지를 구하는 코드는 무엇인가?
+
+```
+set.seed(3)
+N <- nrow(class_roll)
+group <- 1 + sample(1:N) %% 5
+class_roll$group <- factor(group, levels = 1:5, labels = paste("Team", 1:5))
+```
+
+가. `set.seed(3)`
+
+나. `N <- nrow(class_roll)`
+
+다. `sample(1:N) %% 5`
+
+라. `group <- 1 + sample(1:N) %% 5`
+
+<P style = "page-break-before:always">
+
+(@) 다음 코드묶음에서 학번 첫 네자리를 추출하는 코드는 무엇인가? 
+
+```
+ID_14 <- factor(ifelse(substr(class_roll$id, 1, 4) >= 2014, 
+                       "younger.14", "older.14"), 
+                levels = c("younger.14", "older.14"), 
+                labels = c("14학번 이후", "13학번 이전"))
+```
+
+가. `class_roll$id`
+
+나. `substr(class_roll$id, 1, 4)`
+
+다. `ifelse(substr(class_roll$id, 1, 4) >= 2014, "younger.14", "older.14")`
+
+라. `factor(ifelse(substr(class_roll$id, 1, 4) >= 2014, "younger.14", "older.14"))`
+
+(@) 다음 코드묶음에서 e-mail 주소의 사용자이름과  서비스 업체 도메인 명의 리스트에서 도메인명들만을 추출하는 코드는 무엇인가?
+
+```
+email_list <- strsplit(class_roll$email, "@", fixed = TRUE)
+mail_com <- sapply(email_list, "[", 2)
+```
+
+가. `class_roll$email`
+
+나. `strsplit(class_roll$email, "@", fixed = TRUE)` 
+
+다. `sapply(email_list, "[", 2)` 
+
+라. `mail_com <- sapply(email_list, "[", 2)`
+
+<P style = "page-break-before:always">
+
+
+(@) 수강생별로 각 성격유형의 점수 합계를 계산하기 위해 아래의 명령어를 사용하였다. [대괄호] 자리에 들어 갈 함수를 옳게 늘어놓은 것은?
+
+<!--
+```
+BFI_score <- data.frame(sapply(abb_BFI, function(x) apply(BFI_data[, substr(names(BFI_data), 1, 1) == x], 1, sum)))
+```
+-->
+
+```
+BFI_score <- data.frame([대괄호](abb_BFI, function(x) [대괄호](BFI_data[, [대괄호](names(BFI_data), 1, 1) == x], 1, [대괄호])))
+```
+
+가. `sapply, apply, substr, sum`
+
+나. `apply, sapply, substr, sum` 
+
+다. `sapply, apply, sum, substr` 
+
+라. `apply, sapply, substr, sum`
+
+<P style = "page-break-before:always">
+
+(@) 집합 연산에서 차집합을 구하는 `R`함수는 다음 중 어느 것인가?
+
+가. `setdiff()`
+
+나. `diff()` 
+
+다. `difftime()` 
+
+라. `is.na()`
+
+
+(@) 아래의 명령어에서 `join()`을 활용하여 데이터를 합했다. `default`로 설정되어 있는 `type = `?
+```
+BFI_full_kr <- join(class_roll, BFI_level_kr_2, by = "ID")
+```
+
+가. `"left"`
+
+나. `"right"` 
+
+다. `"inner"` 
+
+라. `"full"`

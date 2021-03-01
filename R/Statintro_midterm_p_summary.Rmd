@@ -1,5 +1,5 @@
 ---
-title: "R Programming Midterm Result : Analytics"
+title: "Stat Intro Midterm Result : Summary"
 author: "coop711"
 date: "`r Sys.Date()`"
 output: html_document
@@ -30,36 +30,24 @@ options(width=180)
 
 
 ```{r, read data, echo = FALSE, results = 'hide'}
-midterm_roll01 <- read.xlsx("../data/midterm1901_01.xlsx", 
+load("./red_and_black_190301_data.RData")
+midterm_roll <- read.xlsx("../data/statintro_midterm_v2.xlsx", 
                           sheetIndex = 1, 
                           startRow = 3, 
-                          endRow  = 41, 
-                          colIndex = c(4, 10:49), 
-                          colClasses = rep("character", 41), 
+                          endRow  = 78, 
+                          colIndex = c(4, 10:61), 
+                          colClasses = rep("character", 53), 
                           encoding = "UTF-8",
                           header = FALSE, 
                           stringsAsFactors = FALSE)
-midterm_roll02 <- read.xlsx("../data/midterm1901_02.xlsx", 
-                          sheetIndex = 1, 
-                          startRow = 3, 
-                          endRow  = 41, 
-                          colIndex = c(4, 10:49), 
-                          colClasses = rep("character", 41), 
-                          encoding = "UTF-8",
-                          header = FALSE, 
-                          stringsAsFactors = FALSE)
-names(midterm_roll01) <- c("id", paste("Q", 1:40, sep = ""))
-names(midterm_roll02) <- c("id", paste("Q", 1:40, sep = ""))
-midterm_roll01$group <- "01"
-midterm_roll02$group <- "02"
-midterm_roll <- rbind(midterm_roll01, midterm_roll02)
-names(midterm_roll) <- c("id", paste0("Q", 1:40), "group")
+names(midterm_roll) <- c("id", paste0("Q", 1:50), "score_m", "group")
+# midterm_roll$group <- class_roll$group[match(midterm_roll$id, class_roll$id)]
 head(midterm_roll$id)
 str(midterm_roll)
 kable(midterm_roll)
 #>점수 집계에 필요한 변수만 추출 (id 는 불필요)
-midterm <- midterm_roll[, c(2:42)]  
-kable(midterm)
+midterm <- midterm_roll[, c(2:53)]  
+kable(midterm[1:50])
 ```
 
 <!--
@@ -67,34 +55,39 @@ kable(midterm)
 -->
 
 ```{r, echo = FALSE, eval = TRUE, results = "hide"}
-midterm_df <- midterm[1:40] %>%
-  lapply(FUN = factor, levels = 1:4, 
-         labels = c("가", "나", "다", "라")) %>%
-  data.frame(row.names = NULL)
-str(midterm_df)
+midterm[, -c(4, 51:53)] <- lapply(midterm[, -c(4, 51:53)], 
+                      factor,
+                      levels = c("가", "나", "다", "라"))
+midterm[, 4] <- factor(ifelse(midterm[, 4] == "0", "가", 
+                              ifelse(midterm[, 4] == "6", "나", 
+                                     ifelse(midterm[, 4] == "7", "다", "라"))),
+                       levels = c("가", "나", "다", "라"))
+str(midterm)
+midterm_df <- data.frame(midterm[, 1:50], 
+                         row.names = NULL)
 ```
 
 # Barplot
 
 막대그래프로 답안 분포를 시각적으로 살핀다. 차후 나오는 정답률과 함께 어느 문항에서 어느 답안을 많이 고르는지 파악하는 데 활용한다.
 
-```{r, echo = FALSE, fig.width = 9, fig.height = 12}
+```{r, echo = FALSE, fig.width = 9, fig.height = 15}
 library(RColorBrewer)
 par(family = "KoPubWorldDotum Medium", mar = c(5.1, 4.1, 4.1, 8.1))
 midterm_tbl <- midterm_df %>%
   sapply(FUN = table, useNA = "no")
-kable(midterm_tbl[, 1:20], caption = "Counts")
-kable(midterm_tbl[, 21:40], caption = "Counts")
+kable(midterm_tbl[, 1:25], caption = "Counts")
+kable(midterm_tbl[, 26:50], caption = "Counts")
 midterm_ptbl <- midterm_tbl %>%
   apply(MARGIN = 2, FUN = prop.table) %>%
   `*`(100) %>%
   round(digits = 0)
-kable(midterm_ptbl[, 1:20], caption = "%")
-kable(midterm_ptbl[, 21:40], caption = "%")
+kable(midterm_ptbl[, 1:25], caption = "%")
+kable(midterm_ptbl[, 26:50], caption = "%")
 label_ptbl <- midterm_ptbl %>%
   format(digits = 2, nsmall = 0) %>%
   paste0("%") %>%
-  ifelse(. %in% c("  0%", "  1%", "  2%"), "", .) %>%
+  ifelse(. %in% c(" 0%", " 1%", " 2%", " 3%", " 4%"), "", .) %>%
   matrix(nrow = 4)
 b <- barplot(matrix(midterm_tbl, nrow = 4), 
              horiz = TRUE, 
@@ -105,7 +98,7 @@ b <- barplot(matrix(midterm_tbl, nrow = 4),
              las = 1, 
              xpd = TRUE, 
              legend.text = rownames(midterm_tbl), 
-             args.legend = list(x = 90, y = 45))
+             args.legend = list(x = 90, y = 55))
 # max(b)
 # midterm_tbl[1, ]
 text(x = midterm_tbl[1, ] / 2, 
@@ -134,11 +127,12 @@ text(x = midterm_tbl[1, ] + midterm_tbl[2, ] + midterm_tbl[3, ] + midterm_tbl[4,
     
     
 ```{r, ans list and unlist, echo = FALSE, results = 'hide'}
-ans <- "../data/midterm_ans.txt" %>%
+ans <- "../data/statintro_midterm_ans.txt" %>%
   scan(what = "") %>%
-  split(f = paste0("A", 1:40)) %>%
-  `[`(paste0("A", 1:40))
+  split(f = paste0("A", 1:50)) %>%
+  `[`(paste0("A", 1:50))
 ans
+ans[4] <- "나"
 ```
 
 ## 정답과 대조하여 R(Right)/W(Wrong) 표시 
@@ -149,10 +143,10 @@ ans
 marks_rw <- midterm_df %>%
   `==`(ans) %>%
   ifelse("R", "W") 
-marks_rw[, 1:20] %>%
+marks_rw[, 1:25] %>%
   head %>%
   pander
-marks_rw[, 21:40] %>%
+marks_rw[, 26:50] %>%
   head %>%
   pander
 ```
@@ -170,7 +164,7 @@ marks <- marks_rw %>%
   ifelse(1, 0)
 score <- marks %>%
   apply(MARGIN = 1, FUN = sum, na.rm = TRUE) %>%
-  `*`(2.5)
+  `*`(2)
 score[score == 0] <- NA
 which(score <= 60)
 ```
@@ -178,9 +172,12 @@ which(score <= 60)
 ```{r, pander score, echo = FALSE}
 score %>%
   format(nsmall = 1) %>%
-  cbind("분반" = midterm$group, "순번" = paste0(1:nrow(midterm), "번"), "점수" = .) %>%
+  cbind("학번" = midterm_roll$id, 
+        "그룹" = midterm$group, 
+        "손채점" = midterm$score_m, 
+        "R채점" = .) %>%
 #   `[`(c(1:6, 73:78), ) %>%
-  `[`(sample(1:nrow(midterm), size = 10), ) %>%
+#  `[`(sample(1:nrow(midterm), size = 10), ) %>%
   pander
 ```
 
@@ -203,24 +200,24 @@ score %>%
 score %>%
   stem(scale = 1)
 Red <- midterm %$%
-  `==`(group, "01")
+  `==`(group, "Red")
 Black <- midterm %$%
-  `==`(group, "02")
+  `==`(group, "Black")
 ```
 
-- 01반
+- Red
 
 ```{r, stem for Red}
 score %>%
-  `[`(midterm$group == "01") %>%
-  stem(scale = 0.5)
+  `[`(midterm$group == "Red") %>%
+  stem(scale = 1)
 ```
 
-- 02반
+- Black
 
 ```{r, stem for Black}
 score %>%
-  `[`(midterm$group == "02") %>%
+  `[`(midterm$group == "Black") %>%
   stem(scale = 1)
 ```
 
@@ -239,7 +236,7 @@ score %>%
 
 ```{r, qqplots, echo = FALSE, fig.width = 6, fig.height = 6}
 qqplot(x = score[Red], y = score[Black], 
-       xlab = "01", ylab = "02", 
+       xlab = "Red", ylab = "Black", 
        xlim = c(20, 100), ylim = c(20, 100))
 ```
 
@@ -260,7 +257,7 @@ plot(add = TRUE)
 
 ## t-test
 
-01반과 02반의 점수들에 대하여 t-test를 적용하였더니 통계적으로 유의한 차이가 관찰되지 않는다. 
+Red반과 Black반의 점수들에 대하여 t-test를 적용하였더니 통계적으로 유의한 차이가 관찰되지 않는다. 
 
 ```{r, t test, echo = FALSE}
 midterm %$%
@@ -268,14 +265,16 @@ midterm %$%
   pander
 ```
 
+<!--
 # 복습문제 풀이 효과
 
-```{r, item by type, echo = FALSE}
+```{r, item by type, echo = FALSE, eval = FALSE}
 type_kr <- "../data/midterm_type.txt" %>%
   scan(what = "") %>%
   factor(levels = c("Pre", "No"), 
          labels = c("기출문제", "신규문제"))
 ```
+-->
 
 <!--* 유형별 점수 파악
     * 왜 `marks`의 전치행렬을 사용하고 있는지 이해 필요.
@@ -283,7 +282,7 @@ type_kr <- "../data/midterm_type.txt" %>%
     * 일부 문항의 응답이 NA이면 그 문항을 0점 처리, 결석이면 NA 처리. 
 -->
 
-```{r, echo = FALSE, results = 'hide', eval = TRUE}
+```{r, echo = FALSE, results = 'hide', eval = FALSE}
 score_type <- marks %>%
   t %>%
   aggregate(list("유형" = type_kr), FUN = sum, na.rm = TRUE)
@@ -301,7 +300,7 @@ dimnames(score_type_student) <- list(paste0("s", 1:N),
                                      paste0(levels(type_kr), c("(50점)", "(50점)")))
 ```
 
-```{r, scores by types, echo = FALSE, results = 'markup', eval = TRUE}
+```{r, scores by types, echo = FALSE, results = 'markup', eval = FALSE}
 score_type_student %>%
   `*`(2.5) %>%
   `[`(sample(1:nrow(midterm), size = 10), ) %>%
@@ -339,14 +338,15 @@ rate_item <- marks_2 %>%
 str(rate_item)
 rate_item %<>% 
   round(digits = 1) %>%
-  as.matrix(nrow = 40)
-dimnames(rate_item) <- list("문항" =  paste0("문", 1:40), 
+  as.matrix(nrow = 50)
+dimnames(rate_item) <- list("문항" =  paste0("문", 1:50), 
                             "정답률" = "정답률")
 ```
 
+<!--
 ## 유형별 정답률
 
-```{r, rates by types, echo = FALSE, eval = TRUE}
+```{r, rates by types, echo = FALSE, eval = FALSE}
 rate_item_type <- data.frame("유형" = type_kr, "정답률" = rate_item)
 dimnames(rate_item_type) <- list("문항" = paste0("문", 1:40), 
                                  "유형과 정답률" = c("유형", "정답률(%)"))
@@ -357,12 +357,14 @@ rate_item_type %$%
   tapply(.$"정답률(%)", .$"유형", summary) %>%
   pander
 ```
+-->
 
 
 <!--<P style = "page-break-before:always">-->
 
 ## 어려운 문제?
 
+<!--
 ### 정답률 80% 이하
 
 ```{r, hardest question below 80, echo = FALSE, eval = TRUE}
@@ -380,6 +382,7 @@ rate_item %>%
   t %>%
   kable
 ```
+-->
 
 ### 정답률 60% 이하
 
@@ -408,3 +411,11 @@ rate_item %>%
   kable
 ```
 
+### 정답률 30% 이하
+
+```{r, hardest question below 30, echo = FALSE, eval = TRUE}
+rate_item %>%
+  `[`(. <= 30, , drop = FALSE) %>%
+  t %>%
+  kable
+```
